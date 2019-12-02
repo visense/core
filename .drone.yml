@@ -9200,7 +9200,6 @@ depends_on:
 - phan-php7.1
 - phan-php7.2
 - phan-php7.3
-- phan-php7.4
 
 ---
 kind: pipeline
@@ -9589,7 +9588,7 @@ steps:
 
 - name: configure-federated
   pull: always
-  image: owncloudci/php:7.4
+  image: owncloudci/php:7.2
   commands:
   - cd /drone/federated
   - php occ a:l
@@ -9677,7 +9676,7 @@ services:
 
 - name: federated
   pull: always
-  image: owncloudci/php:7.4
+  image: owncloudci/php:7.2
   command:
   - /usr/local/bin/apachectl
   - -e
@@ -9800,7 +9799,7 @@ steps:
 
 - name: configure-federated
   pull: always
-  image: owncloudci/php:7.4
+  image: owncloudci/php:7.2
   commands:
   - cd /drone/federated
   - php occ a:l
@@ -9888,7 +9887,7 @@ services:
 
 - name: federated
   pull: always
-  image: owncloudci/php:7.4
+  image: owncloudci/php:7.2
   command:
   - /usr/local/bin/apachectl
   - -e
@@ -15033,7 +15032,7 @@ steps:
 
 - name: configure-federated
   pull: always
-  image: owncloudci/php:7.4
+  image: owncloudci/php:7.2
   commands:
   - cd /drone/federated
   - php occ a:l
@@ -15131,7 +15130,7 @@ services:
 
 - name: federated
   pull: always
-  image: owncloudci/php:7.4
+  image: owncloudci/php:7.2
   command:
   - /usr/local/bin/apachectl
   - -e
@@ -15254,7 +15253,7 @@ steps:
 
 - name: configure-federated
   pull: always
-  image: owncloudci/php:7.4
+  image: owncloudci/php:7.2
   commands:
   - cd /drone/federated
   - php occ a:l
@@ -15352,7 +15351,7 @@ services:
 
 - name: federated
   pull: always
-  image: owncloudci/php:7.4
+  image: owncloudci/php:7.2
   command:
   - /usr/local/bin/apachectl
   - -e
@@ -16205,7 +16204,6 @@ depends_on:
 - phan-php7.1
 - phan-php7.2
 - phan-php7.3
-- phan-php7.4
 
 ---
 kind: pipeline
@@ -16373,7 +16371,6 @@ depends_on:
 - phan-php7.1
 - phan-php7.2
 - phan-php7.3
-- phan-php7.4
 
 ---
 kind: pipeline
@@ -16526,7 +16523,6 @@ depends_on:
 - phan-php7.1
 - phan-php7.2
 - phan-php7.3
-- phan-php7.4
 
 ---
 kind: pipeline
@@ -16679,7 +16675,6 @@ depends_on:
 - phan-php7.1
 - phan-php7.2
 - phan-php7.3
-- phan-php7.4
 
 ---
 kind: pipeline
@@ -16832,7 +16827,6 @@ depends_on:
 - phan-php7.1
 - phan-php7.2
 - phan-php7.3
-- phan-php7.4
 
 ---
 kind: pipeline
