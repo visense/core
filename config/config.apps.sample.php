@@ -102,4 +102,57 @@ $CONFIG = array(
 
 'collabora_group' => '',
 
+/**
+ * OIDC Configuration
+ */
+
+/**
+ * Configure OIDC OpenID Configuration
+ *
+ * The `provider-url`, `client-id` and `client-secret` variables are to be
+ * taken from the OpenID Provider's setup. The `loginButtonName` variable can
+ * be freely chosen, depending on the installation.
+ *
+ * NOTE: The provider-params configuration array only needs to be used if the
+ * OpenID Provider does NOT support service discovery.
+ *
+ * autoRedirectOnLoginPage::
+ * If true, the login page will automatically be redirected to the IdP, as when
+ * the button is pressed. The default is `false`.
+ *
+ * mode::
+ * This is the attribute in the owncloud accounts table to search for users.
+ * The default value is `email`. An alternative value: `userid`.
+ *
+ * search-attribute::
+ * This is the claim from the OpenID user information which shall be used for
+ * searching in the accounts table. The default value is `email`.
+ *
+ * use-token-introspection-endpoint::
+ * There are tokens which are not JWT and information like the expiry cannot be
+ * read from the token itself. In these cases, the IdP needs to call on the
+ * token introspection endpoint to get this information. The default value is
+ * `false`.
+ */
+'openid-connect' => array(
+    'autoRedirectOnLoginPage' => false,
+    'client-id' => '',
+    'client-secret' => '',
+    'loginButtonName' => 'OpenId Connect',
+    'mode' => 'userid',
+    // Only required if the OpenID Provider does not support service discovery
+    'provider-params' => array(
+        'authorization_endpoint' => '...',
+        'end_session_endpoint' => '...',
+        'jwks_uri' => '...',
+        'registration_endpoint' => '...',
+        'token_endpoint' => '...',
+        'token_endpoint_auth_methods_supported' => '...',
+        'userinfo_endpoint' => '...'
+    ),
+    'provider-url' => '',
+    'search-attribute' => 'sub',
+    'use-token-introspection-endpoint' => true,
+),
+
 );
