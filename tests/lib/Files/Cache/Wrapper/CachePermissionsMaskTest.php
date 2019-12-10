@@ -98,4 +98,9 @@ class CachePermissionsMaskTest extends CacheTest {
 			$this->assertEquals($mask & ~Constants::PERMISSION_CREATE, $file['permissions']);
 		}
 	}
+
+	public function testFolderContentsFilter() {
+		//not supported as parent CacheTest calls private method of Cache class
+		$this->assertTrue(true);
+	}
 }

@@ -80,4 +80,9 @@ class CacheJailTest extends CacheTest {
 		//not supported
 		$this->assertTrue(true);
 	}
+
+	public function testFolderContentsFilter() {
+		//not supported as parent CacheTest calls private method of Cache class
+		$this->assertTrue(true);
+	}
 }

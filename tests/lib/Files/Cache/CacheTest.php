@@ -684,6 +684,37 @@ class CacheTest extends TestCase {
 		$this->assertEmpty($entry['checksum']);
 	}
 
+	public function testFolderContentsFilter() {
+		$parentfolder = 'parent';
+		$file1 = 'parent/file';
+		$folder = 'parent/folder';
+		$file2 = 'parent/folder/bar';
+		$file3 = 'parent/folder/foo';
+
+		$this->cache->put($parentfolder, ['size' => 0, 'mtime' => 5, 'mimetype' => 'httpd/unix-directory']);
+		$this->cache->put($file1, ['size' => 25, 'mtime' => 10, 'mimetype' => 'text/plain']);
+
+		$this->cache->put($folder, ['size' => 0, 'mtime' => 15, 'mimetype' => 'httpd/unix-directory']);
+
+		$this->cache->put($file2, ['size' => 1000, 'mtime' => 20, 'mimetype' => 'text/plain']);
+		$this->cache->put($file3, ['size' => 20, 'mtime' => 25, 'mimetype' => 'text/plain']);
+
+		$parentFolderId = $this->cache->getId($parentfolder);
+		$folderId = $this->cache->getId($folder);
+
+		$content = $this->invokePrivate($this->cache, 'getChildrenWithFilter', [$parentFolderId, null]);
+		$this->assertEquals(2, \count($content));
+
+		$content = $this->invokePrivate($this->cache, 'getChildrenWithFilter', [$parentFolderId, 'httpd/unix-directory']);
+		$this->assertEquals(1, \count($content));
+
+		$content = $this->invokePrivate($this->cache, 'getChildrenWithFilter', [$folderId]);
+		$this->assertEquals(2, \count($content));
+
+		$content = $this->invokePrivate($this->cache, 'getChildrenWithFilter', [$folderId, 'httpd/unix-directory']);
+		$this->assertEquals(0, \count($content));
+	}
+
 	protected function tearDown(): void {
 		if ($this->cache) {
 			$this->cache->clear();
