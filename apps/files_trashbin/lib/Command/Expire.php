@@ -26,7 +26,7 @@
 namespace OCA\Files_Trashbin\Command;
 
 use OC\Command\FileAccess;
-use OCA\Files_Trashbin\Trashbin;
+use OCA\Files_Trashbin\TrashExpiryManager;
 use OCP\Command\ICommand;
 
 class Expire implements ICommand {
@@ -53,7 +53,15 @@ class Expire implements ICommand {
 
 		\OC_Util::tearDownFS();
 		\OC_Util::setupFS($this->user);
-		Trashbin::expire($this->user);
+
+		$trashExpiryManager = new TrashExpiryManager(
+			$userManager,
+			\OC::$server->getConfig(),
+			\OC::$server->getTimeFactory(),
+			\OC::$server->getLogger(),
+		);
+		$trashExpiryManager->expireTrash($this->user);
+
 		\OC_Util::tearDownFS();
 	}
 }

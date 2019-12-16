@@ -24,19 +24,16 @@
 
 namespace OCA\Files_Trashbin\BackgroundJob;
 
-use OCA\Files_Trashbin\AppInfo\Application;
-use OCA\Files_Trashbin\Expiration;
-use OCA\Files_Trashbin\Helper;
-use OCA\Files_Trashbin\Trashbin;
+use OCA\Files_Trashbin\TrashExpiryManager;
 use OCP\IUser;
 use OCP\IUserManager;
 
 class ExpireTrash extends \OC\BackgroundJob\TimedJob {
 
 	/**
-	 * @var Expiration
+	 * @var TrashExpiryManager
 	 */
-	private $expiration;
+	private $trashExpiryManager;
 	
 	/**
 	 * @var IUserManager
@@ -45,25 +42,29 @@ class ExpireTrash extends \OC\BackgroundJob\TimedJob {
 
 	/**
 	 * @param IUserManager|null $userManager
-	 * @param Expiration|null $expiration
+	 * @param TrashExpiryManager|null $trashExpiryManager
 	 */
 	public function __construct(IUserManager $userManager = null,
-								Expiration $expiration = null) {
+								TrashExpiryManager $trashExpiryManager = null) {
 		// Run once per 30 minutes
 		$this->setInterval(60 * 30);
 
-		if ($expiration === null || $userManager === null) {
+		if ($trashExpiryManager === null || $userManager === null) {
 			$this->fixDIForJobs();
 		} else {
 			$this->userManager = $userManager;
-			$this->expiration = $expiration;
+			$this->trashExpiryManager = $trashExpiryManager;
 		}
 	}
 
 	protected function fixDIForJobs() {
-		$application = new Application();
 		$this->userManager = \OC::$server->getUserManager();
-		$this->expiration = $application->getContainer()->query('Expiration');
+		$this->trashExpiryManager = new TrashExpiryManager(
+			$this->userManager,
+			\OC::$server->getConfig(),
+			\OC::$server->getTimeFactory(),
+			\OC::$server->getLogger(),
+		);
 	}
 
 	/**
@@ -71,8 +72,8 @@ class ExpireTrash extends \OC\BackgroundJob\TimedJob {
 	 * @throws \Exception
 	 */
 	protected function run($argument) {
-		$maxAge = $this->expiration->getMaxAgeAsTimestamp();
-		if (!$maxAge) {
+		$retentionEnabled = $this->trashExpiryManager->expiryByRetentionEnabled();
+		if (!$retentionEnabled) {
 			return;
 		}
 
@@ -81,8 +82,7 @@ class ExpireTrash extends \OC\BackgroundJob\TimedJob {
 			if (!$this->setupFS($uid)) {
 				return;
 			}
-			$dirContent = Helper::getTrashFiles('/', $uid, 'mtime');
-			Trashbin::deleteExpiredFiles($dirContent, $uid);
+			$this->trashExpiryManager->expireTrashByRetention($uid);
 		});
 		
 		\OC_Util::tearDownFS();
