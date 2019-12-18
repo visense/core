@@ -25,10 +25,16 @@
 namespace OCA\Files_Trashbin\BackgroundJob;
 
 use OCA\Files_Trashbin\TrashExpiryManager;
+use OCP\IConfig;
 use OCP\IUser;
 use OCP\IUserManager;
 
 class ExpireTrash extends \OC\BackgroundJob\TimedJob {
+
+	/**
+	 * @var IConfig
+	 */
+	private $config;
 
 	/**
 	 * @var TrashExpiryManager
@@ -40,11 +46,15 @@ class ExpireTrash extends \OC\BackgroundJob\TimedJob {
 	 */
 	private $userManager;
 
+	const USERS_PER_SESSION = 500;
+
 	/**
+	 * @param IConfig|null $config
 	 * @param IUserManager|null $userManager
 	 * @param TrashExpiryManager|null $trashExpiryManager
 	 */
-	public function __construct(IUserManager $userManager = null,
+	public function __construct(IConfig $config = null,
+								IUserManager $userManager = null,
 								TrashExpiryManager $trashExpiryManager = null) {
 		// Run once per 30 minutes
 		$this->setInterval(60 * 30);
@@ -54,6 +64,7 @@ class ExpireTrash extends \OC\BackgroundJob\TimedJob {
 		} else {
 			$this->userManager = $userManager;
 			$this->trashExpiryManager = $trashExpiryManager;
+			$this->config = $config;
 		}
 	}
 
@@ -77,14 +88,29 @@ class ExpireTrash extends \OC\BackgroundJob\TimedJob {
 			return;
 		}
 
-		$this->userManager->callForSeenUsers(function (IUser $user) {
+		$offset = $this->config->getAppValue('files_trashbin', 'cronjob_trash_expiry_offset', 0);
+
+		$count = 0;
+		$this->userManager->callForUsers(function (IUser $user) use (&$count){
+			\OCP\Util::writeLog('versions_testing', "memory " . $count . " : used " . memory_get_usage(false) . " / allocated " .memory_get_usage(true) . " B", \OCP\Util::ERROR);
+
 			$uid = $user->getUID();
 			if (!$this->setupFS($uid)) {
 				return;
 			}
 			$this->trashExpiryManager->expireTrashByRetention($uid);
-		});
-		
+			$count++;
+		}, '', true, self::USERS_PER_SESSION, $offset);
+
+		if ($count < self::USERS_PER_SESSION) {
+			// next run wont have any users to scan,
+			// as we returned less than the limit
+			$this->config->setAppValue('files_trashbin', 'cronjob_trash_expiry_offset', 0);
+		} else {
+			$offset += self::USERS_PER_SESSION;
+			$this->config->setAppValue('files_trashbin', 'cronjob_trash_expiry_offset', $offset);
+		}
+
 		\OC_Util::tearDownFS();
 	}
 
