@@ -26,6 +26,8 @@
 namespace OCA\Files_Trashbin\Command;
 
 use OC\Command\FileAccess;
+use OCA\Files_Trashbin\Expiration;
+use OCA\Files_Trashbin\Quota;
 use OCA\Files_Trashbin\TrashExpiryManager;
 use OCP\Command\ICommand;
 
@@ -46,6 +48,12 @@ class Expire implements ICommand {
 
 	public function handle() {
 		$userManager = \OC::$server->getUserManager();
+		$trashExpiryManager = $this->getTrashExpiryManager();
+
+		if (!$trashExpiryManager->expiryEnabled()) {
+			return;
+		}
+
 		if (!$userManager->userExists($this->user)) {
 			// User has been deleted already
 			return;
@@ -54,14 +62,24 @@ class Expire implements ICommand {
 		\OC_Util::tearDownFS();
 		\OC_Util::setupFS($this->user);
 
-		$trashExpiryManager = new TrashExpiryManager(
-			$userManager,
-			\OC::$server->getConfig(),
-			\OC::$server->getTimeFactory(),
-			\OC::$server->getLogger(),
-		);
 		$trashExpiryManager->expireTrash($this->user);
 
 		\OC_Util::tearDownFS();
+	}
+
+	private function getTrashExpiryManager() {
+		$expiration = new Expiration(
+			\OC::$server->getConfig(),
+			\OC::$server->getTimeFactory()
+		);
+		$quota = new Quota(
+			\OC::$server->getUserManager(),
+			\OC::$server->getConfig()
+		);
+		return new TrashExpiryManager(
+			$expiration,
+			$quota,
+			\OC::$server->getLogger()
+		);
 	}
 }

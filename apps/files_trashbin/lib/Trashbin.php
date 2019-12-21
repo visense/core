@@ -39,6 +39,7 @@ namespace OCA\Files_Trashbin;
 
 use OC\Files\Filesystem;
 use OC\Files\View;
+use OCA\Files_Trashbin\Command\Expire;
 use OCP\Encryption\Keys\IStorage;
 use OCP\Files\ForbiddenException;
 use OCP\Files\NotFoundException;
@@ -211,8 +212,6 @@ class Trashbin {
 	 * @param string $targetPath
 	 * @param $user
 	 * @param integer $timestamp
-	 *
-	 * @return boolean true if target exists after copy
 	 */
 	private static function copyFilesToUser($sourcePath, $owner, $targetPath, $user, $timestamp) {
 		self::setUpTrash($owner);
@@ -230,9 +229,8 @@ class Trashbin {
 
 		if ($view->file_exists($target)) {
 			self::insertTrashEntry($user, $targetFilename, $targetLocation, $timestamp);
-			return true;
+			self::scheduleExpire($user);
 		}
-		return false;
 	}
 
 	/**
@@ -255,10 +253,9 @@ class Trashbin {
 
 		self::retainVersions($targetFilename, $owner, $ownerPath, $timestamp, null, true);
 
-		$trashExpiryManager = self::getTrashExpiryManager();
 		if ($view->file_exists($target)) {
 			self::insertTrashEntry($owner, $targetFilename, $targetLocation, $timestamp);
-			$trashExpiryManager->scheduleExpiry($owner);
+			self::scheduleExpire($owner);
 		}
 	}
 
@@ -347,7 +344,6 @@ class Trashbin {
 
 		$trashStorage->getUpdater()->renameFromStorage($sourceStorage, $sourceInternalPath, $trashInternalPath);
 
-		$trashExpiryManager = self::getTrashExpiryManager();
 		if ($moveSuccessful) {
 			$query = \OC_DB::prepare("INSERT INTO `*PREFIX*files_trash` (`id`,`timestamp`,`location`,`user`) VALUES (?,?,?,?)");
 			$result = $query->execute([$filename, $timestamp, $location, $owner]);
@@ -361,18 +357,15 @@ class Trashbin {
 
 			// if owner !== user we need to also add a copy to the owners trash
 			if ($user !== $owner) {
-				$targetExists = self::copyFilesToUser($ownerPath, $owner, $file_path, $user, $timestamp);
-				if ($targetExists) {
-					$trashExpiryManager->scheduleExpiry($user);
-				}
+				self::copyFilesToUser($ownerPath, $owner, $file_path, $user, $timestamp);
 			}
 		}
 
-		$trashExpiryManager->scheduleExpiry($user);
+		self::scheduleExpire($user);
 
 		// if owner !== user we also need to update the owners trash size
 		if ($owner !== $user) {
-			$trashExpiryManager->scheduleExpiry($owner);
+			self::scheduleExpire($owner);
 		}
 
 		return $moveSuccessful;
@@ -644,7 +637,7 @@ class Trashbin {
 		\OC_Hook::emit(
 			'\OCP\Trashbin',
 			'preDelete',
-			['path' => $path, 'user'=> $uid]
+			['path' => $path, 'user' => $uid]
 		);
 	}
 
@@ -658,7 +651,7 @@ class Trashbin {
 		\OC_Hook::emit(
 			'\OCP\Trashbin',
 			'delete',
-			['path' => $path, 'user'=> $uid]
+			['path' => $path, 'user' => $uid]
 		);
 	}
 
@@ -769,23 +762,11 @@ class Trashbin {
 		$size = self::getTrashbinSize($user);
 		$freeSpace = self::getQuota()->calculateFreeSpace($size, $user);
 
-		$trashExpiryManager = self::getTrashExpiryManager();
 		if ($freeSpace < 0) {
-			$trashExpiryManager->scheduleExpiry($user);
+			self::scheduleExpire($user);
 		}
 	}
 
-	/**
-	 * @return TrashExpiryManager
-	 */
-	protected static function getTrashExpiryManager() {
-		return new TrashExpiryManager(
-			\OC::$server->getUserManager(),
-			\OC::$server->getConfig(),
-			\OC::$server->getTimeFactory(),
-			\OC::$server->getLogger()
-		);
-	}
 	/**
 	 * @return Quota
 	 */
@@ -794,6 +775,13 @@ class Trashbin {
 			\OC::$server->getUserManager(),
 			\OC::$server->getConfig()
 		);
+	}
+
+	/**
+	 * @param string $user
+	 */
+	private static function scheduleExpire($user) {
+		\OC::$server->getCommandBus()->push(new Expire($user));
 	}
 
 	/**

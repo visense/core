@@ -82,7 +82,7 @@ class MemoryAccountMapper extends AccountMapper {
 		return $match;
 	}
 
-	public function callForAllUsers($callback, $search, $onlySeen) {
+	public function callForUsers($callback, $search, $onlySeen, $limit = null, $offset = null) {
 		foreach (self::$accounts as $account) {
 			$return =$callback($account);
 			if ($return === false) {

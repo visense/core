@@ -22,11 +22,7 @@
 
 namespace OCA\Files_Trashbin;
 
-use OCA\Files_Trashbin\Command\Expire;
-use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\IConfig;
 use OCP\ILogger;
-use OCP\IUserManager;
 
 class TrashExpiryManager {
 
@@ -39,27 +35,42 @@ class TrashExpiryManager {
 	/* @var ILogger */
 	private $logger;
 
-	public function __construct(IUserManager $userManager,
-								IConfig $config,
-								ITimeFactory $timeFactory,
+	public function __construct(Expiration $expiration,
+								Quota $quota,
 								Ilogger $logger) {
 		$this->logger = $logger;
-		$this->expiration = new Expiration(
-			$config,
-			$timeFactory
-		);
-		$this->quota = new Quota(
-			$userManager,
-			$config
-		);
+		$this->expiration = $expiration;
+		$this->quota = $quota;
 	}
 
 	public function expiryEnabled() {
-		return $this->expiration->isEnabled() !== false;
+		return $this->expiration->isEnabled();
 	}
 
 	public function expiryByRetentionEnabled() {
 		return $this->expiration->getMaxAgeAsTimestamp() !== false;
+	}
+
+	/**
+	 * Expire trashbin using retention setting.
+	 *
+	 * @param string $uid
+	 */
+	public function expireTrashByRetention(string $uid) {
+		// get trashbin files for this user and sort ascending by mtime
+		// sorting will allow us to stop expiring early
+		$userTrashbinContent = Helper::getTrashFiles('/', $uid, 'mtime', false);
+		foreach ($userTrashbinContent as $key => $trashbinEntry) {
+			if ($this->expiration->isExpired($trashbinEntry->getMtime())) {
+				Trashbin::delete($trashbinEntry->getName(), $uid, $trashbinEntry->getMtime());
+				$this->logger->info(
+					'Remove "' . $trashbinEntry->getName() . '" from "' . $uid . '" trashbin because it exceeds max retention obligation term.',
+					['app' => 'files_trashbin']
+				);
+			} else {
+				break;
+			}
+		}
 	}
 
 	/**
@@ -77,13 +88,10 @@ class TrashExpiryManager {
 		// sorting will allow us to stop expiring early
 		$remainingUserTrashbinContent = Helper::getTrashFiles('/', $uid, 'mtime', false);
 		foreach ($remainingUserTrashbinContent as $key => $trashbinEntry) {
-			$timestamp = $trashbinEntry['mtime'];
-			$filename = $trashbinEntry['name'];
-			if ($this->expiration->isExpired($timestamp)) {
-			//if (true) {
-				$availableSpace += Trashbin::delete($filename, $uid, $timestamp);
+			if ($this->expiration->isExpired($trashbinEntry->getMtime())) {
+				$availableSpace += Trashbin::delete($trashbinEntry->getName(), $uid, $trashbinEntry->getMtime());
 				$this->logger->info(
-					'Remove "' . $filename . '" from trashbin because it exceeds max retention obligation term.',
+					'Remove "' . $trashbinEntry->getName() . '" from trashbin because it exceeds max retention obligation term.',
 					['app' => 'files_trashbin']
 				);
 
@@ -97,12 +105,12 @@ class TrashExpiryManager {
 		// if space is still negative, purge remaining files
 		if ($availableSpace < 0) {
 			foreach ($remainingUserTrashbinContent as $key => $trashbinEntry) {
-				if ($availableSpace < 0 && $this->expiration->isExpired($trashbinEntry['mtime'], true)) {
-					$tmp = Trashbin::delete($trashbinEntry['name'], $uid, $trashbinEntry['mtime']);
+				if ($availableSpace < 0 && $this->expiration->isExpired($trashbinEntry->getMtime(), true)) {
+					$deletedSize = Trashbin::delete($trashbinEntry->getName(), $uid, $trashbinEntry->getMtime());
 					$message = \sprintf(
 						'remove "%s" (%dB) to meet the limit of trash bin size (%d%% of available quota)',
-						$trashbinEntry['name'],
-						$tmp,
+						$trashbinEntry->getMtime(),
+						$deletedSize,
 						$this->quota->getPurgeLimit()
 					);
 
@@ -111,67 +119,11 @@ class TrashExpiryManager {
 						['app' => 'files_trashbin']
 					);
 
-					$availableSpace += $tmp;
+					$availableSpace += $deletedSize;
 				} else {
 					break;
 				}
 			}
 		}
 	}
-
-	/**
-	 * Expire trashbin using retention setting.
-	 *
-	 * @param string $uid
-	 */
-	public function expireTrashByRetention(string $uid) {
-		$count = 0;
-		$size = 0;
-		$scheduledForDeletion = [];
-
-		// get trashbin files for this user and sort ascending by mtime
-		// sorting will allow us to stop expiring early
-		$userTrashbinContent = Helper::getTrashFiles('/', $uid, 'mtime', false);
-		foreach ($userTrashbinContent as $key => $trashbinEntry) {
-			$filename = $trashbinEntry['name'];
-			$timestamp = $trashbinEntry['mtime'];
-			if ($this->expiration->isExpired($timestamp)) {
-				$scheduledForDeletion[] = $filename . '.' .$timestamp;
-				unset($userTrashbinContent[$key]);
-			} else {
-				break;
-			}
-		}
-		unset($userTrashbinContent);
-
-		// do actual delete
-		foreach ($scheduledForDeletion as $key => $fileToDelete) {
-			$fileToDeleteParts = explode('.', $fileToDelete);
-			$count++;
-			$size += Trashbin::delete($fileToDeleteParts[0], $uid, $fileToDeleteParts[1]);
-			$this->logger->info(
-				'Remove "' . $fileToDeleteParts[0] . '" from "' . $uid . '" trashbin because it exceeds max retention obligation term.',
-				['app' => 'files_trashbin']
-			);
-			unset($scheduledForDeletion[$key]);
-		}
-
-		return [$size, $count];
-	}
-
-	/**
-	 * Expire trashbin using retention setting.
-	 *
-	 * @param string $uid
-	 */
-	public function scheduleExpiry(string $uid) {
-		if ($this->expiryEnabled()) {
-			\OC::$server->getCommandBus()->push(
-				new Expire($uid)
-			);
-			return true;
-		}
-		return false;
-	}
-
 }

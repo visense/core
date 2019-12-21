@@ -213,16 +213,30 @@ class AccountMapperTest extends TestCase {
 		$this->assertSame($expected, $result);
 	}
 
-	public function testCallForUsersLimit() {
-		// don use offset and limit
-		$i = 1;
-		$this->mapper->callForUsers(function (Account $account) use (&$i) {
-			$this->assertEquals("TestFind".$i, $account->getUserId());
-			$i++;
-		}, 'TestFind', false, null, null);
-		$this->assertEquals(5, $i);
+	/**
+	 * callForUsers without offset and limit. This should return all users,
+	 * in any order as there is no need for sorting
+	 */
+	public function testCallForUsers() {
+		$expectedAccounts = [
+			"TestFind1",
+			"TestFind2",
+			"TestFind3",
+			"TestFind4",
+		];
 
-		// use offset and limit
+		$accounts = [];
+		$this->mapper->callForUsers(function (Account $account) use (&$accounts) {
+			$accounts[] = $account->getUserId();
+		}, 'TestFind', false, null, null);
+		\sort($accounts);
+		$this->assertSame($expectedAccounts, $accounts);
+	}
+
+	/**
+	 * callForUsers using offset and limit of 2 users at the same time
+	 */
+	public function testCallForUsersLimit() {
 		$i = 1;
 		$this->mapper->callForUsers(function (Account $account) use (&$i) {
 			$this->assertEquals("TestFind".$i, $account->getUserId());
