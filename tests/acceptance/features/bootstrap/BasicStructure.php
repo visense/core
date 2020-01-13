@@ -2540,6 +2540,7 @@ trait BasicStructure {
 	 * @param BeforeScenarioScope $scope
 	 *
 	 * @return void
+	 * @throws Exception
 	 */
 	public function before(BeforeScenarioScope $scope) {
 		// Get the environment
@@ -2549,6 +2550,11 @@ trait BasicStructure {
 		$this->ocsContext = new OCSContext();
 		$this->ocsContext->before($scope);
 		$environment->registerContext($this->ocsContext);
+
+		if (getenv("TEST_EXTERNAL_USER_BACKENDS") === "true") {
+			$suiteParameters = SetupHelper::getSuiteParameters($scope);
+			$this->connectToLdap($suiteParameters);
+		}
 	}
 
 	/**
