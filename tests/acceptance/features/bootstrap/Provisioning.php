@@ -512,40 +512,60 @@ trait Provisioning {
 	 * created user is added to `createdUsersList`
 	 * ldap-user are re-synced after creating a new user
 	 *
-	 * @param array $settings
+	 * @param array $setting
 	 * @param boolean $initialize
 	 *
 	 * @return void
 	 * @throws Exception
 	 */
-	public function createALdapUser($settings, $initialize) {
+	public function createALdapUser($setting, $initialize) {
 		$ou = "TestUsers";
-		$newDN = 'uid=' . $settings["userid"] . ',ou=' . $ou . ',' . 'dc=owncloud,dc=com';
+		$newDN = 'uid=' . $setting["userid"] . ',ou=' . $ou . ',' . 'dc=owncloud,dc=com';
 		$uidNumber = ($this->countUsersCreated === null ? 0 : $this->countUsersCreated) + 1;
 		$entry = [];
-		$entry['cn'] = $settings["userid"];
-		$entry['sn'] = $settings["displayName"];
-		$entry['homeDirectory'] = '/home/openldap/' . $settings["userid"];
+		$entry['cn'] = $setting["userid"];
+		$entry['sn'] = $setting["displayName"];
+		$entry['homeDirectory'] = '/home/openldap/' . $setting["userid"];
 		$entry['objectclass'][] = 'posixAccount';
 		$entry['objectclass'][] = 'inetOrgPerson';
-		$entry['userPassword'] = $settings["password"];
-		$entry['displayName'] = $settings["displayName"];
-		$entry['mail'] = $settings["email"];
+		$entry['userPassword'] = $setting["password"];
+		$entry['displayName'] = $setting["displayName"];
+		$entry['mail'] = $setting["email"];
 		$entry['gidNumber'] = 5000;
 		$entry['uidNumber'] = $uidNumber;
 		$this->ldap->add($newDN, $entry);
 		$this->addUserToCreatedUsersList(
-			$settings["userid"],
-			$settings["password"],
-			$settings["displayName"],
-			$settings["email"]
+			$setting["userid"],
+			$setting["password"],
+			$setting["displayName"],
+			$setting["email"]
 		);
-		\array_push($this->ldapCreatedUsers, $settings['userid']);
+		\array_push($this->ldapCreatedUsers, $setting['userid']);
 		$this->theLdapUsersHaveBeenReSynced();
 		$this->countUsersCreated += 1;
 		if ($initialize) {
-			$this->initializeUser($settings["userid"], $settings["password"]);
+			$this->initializeUser($setting["userid"], $setting["password"]);
 		}
+	}
+
+	/**
+	 * @param string $group group name
+	 *
+	 * @throws Exception
+	 * @throws LdapException
+	 */
+	public function createALdapGroup($group) {
+		$ou = "TestGroups";
+		$newDN = 'cn=' . $group . ',ou=' . $ou . ',' . 'dc=owncloud,dc=com';
+		$entry = [];
+		$entry['cn'] = $group;
+		$entry['objectclass'][] = 'posixGroup';
+		$entry['objectclass'][] = 'top';
+		$entry['gidNumber'] = 5000;
+		$resp = $this->ldap->add($newDN, $entry);
+		\array_push($this->ldapCreatedGroups, $group);
+		$this->theLdapUsersHaveBeenReSynced();
+		$this->addGroupToCreatedGroupsList($group);
 	}
 
 	/**
@@ -2116,9 +2136,7 @@ trait Provisioning {
 	 */
 	public function groupHasBeenCreated($group) {
 		$this->createTheGroup($group);
-		if (\getenv("TEST_EXTERNAL_USER_BACKENDS") !== "true") {
-			$this->groupShouldExist($group);
-		}
+		$this->groupShouldExist($group);
 	}
 
 	/**
@@ -2244,7 +2262,16 @@ trait Provisioning {
 				}
 				break;
 			case "ldap":
-				echo "creating LDAP groups is not implemented, so assume they exist\n";
+				try {
+					$this->createALdapGroup($group);
+				} catch (LdapException $e) {
+					throw new Exception(
+						"could not create group. Error: {$e}"
+					);
+				}
+
+
+
 				break;
 			default:
 				throw new InvalidArgumentException(
