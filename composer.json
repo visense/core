@@ -63,7 +63,8 @@
         "composer/semver": "^1.4",
         "ext-json": "*",
         "sabre/vobject": "^4.2",
-        "dg/composer-cleaner": "^2.0"
+        "dg/composer-cleaner": "^2.0",
+        "zendframework/zend-ldap": "^2.10"
     },
     "extra": {
         "bamarni-bin": {

@@ -493,6 +493,12 @@ default:
     webUISharingAutocompletion:
       paths:
         - '%paths.base%/../features/webUISharingAutocompletion'
+      context: &common_ldap_suite_context
+        parameters:
+          ldapAdminPassword: admin
+          ldapUsersOU: TestUsers
+          ldapGroupsOU: TestGroups
+          ldapInitialUserFilePath: /../../config/ldap-users.ldif
       contexts:
         - FeatureContext: *common_feature_context_params
         - WebUIFilesContext:
