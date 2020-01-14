@@ -2304,6 +2304,72 @@ trait Provisioning {
 			true
 		);
 	}
+	
+	/**
+	 * @param string $value
+	 * @param string $attribute
+	 * @param string $entry
+	 *
+	 * @return void
+	 */
+	public function deleteValueFromLdapAttribute($value, $attribute, $entry) {
+		$this->ldap->deleteAttributes(
+			$entry . "," . $this->ldapBaseDN, [$attribute => [$value]]
+		);
+	}
+
+	/**
+	 * @param string $user
+	 * @param string $group
+	 * @param null $ou
+	 *
+	 * @return void
+	 */
+	public function removeUserFromLdapGroup($user, $group, $ou = null) {
+		if ($ou === null) {
+			$ou = $this->getLdapGroupsOU();
+		}
+		$this->deleteValueFromLdapAttribute(
+			$user, "memberUid", "cn=$group,ou=$ou"
+		);
+	}
+
+	/**
+	 * @param string $entry
+	 *
+	 * @return void
+	 */
+	public function deleteTheLdapEntry($entry) {
+		$this->ldap->delete($entry . "," . $this->ldapBaseDN);
+	}
+
+	/**
+	 * @param string $group
+	 * @param null $ou
+	 *
+	 * @return void
+	 */
+	public function deleteLdapGroup($group, $ou = null) {
+		if ($ou === null) {
+			$ou = $this->getLdapGroupsOU();
+		}
+		$this->deleteTheLdapEntry("cn=$group,ou=$ou");
+		$this->rememberThatGroupIsNotExpectedToExist($group);
+	}
+
+	/**
+	 * @param string $username
+	 * @param null $ou
+	 *
+	 * @return void
+	 */
+	public function deleteLdapUser($username, $ou = null) {
+		if ($ou === null) {
+			$ou = $this->getLdapUsersOU();
+		}
+		$this->deleteTheLdapEntry("cn=$username,ou=$ou");
+		$this->rememberThatUserIsNotExpectedToExist($username);
+	}
 
 	/**
 	 * @When /^the administrator disables user "([^"]*)" using the provisioning API$/
