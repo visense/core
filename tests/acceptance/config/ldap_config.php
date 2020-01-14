@@ -1,7 +1,7 @@
 <?php
 /**
  * @author JankariTech <info@jankaritech.com>
- * 
+ *
  * Ldap user-group config
  */
 $bdn = 'dc=owncloud,dc=com';
