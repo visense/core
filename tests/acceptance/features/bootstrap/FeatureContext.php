@@ -22,6 +22,7 @@
  */
 
 use rdx\behatvars\BehatVariablesContext;
+use Zend\Ldap\Ldap;
 
 require_once 'bootstrap.php';
 
@@ -32,7 +33,7 @@ class FeatureContext extends BehatVariablesContext {
 	use BasicStructure;
 
 	/**
-	 * @var string
+	 * @var Ldap
 	 */
 	private $ldap;
 	private $ldapBaseDN;
@@ -54,6 +55,70 @@ class FeatureContext extends BehatVariablesContext {
 	private $ldapCreatedGroups = [];
 	private $toDeleteLdapConfigs = [];
 	private $oldConfig = [];
+
+
+	/**
+	 * @return Ldap
+	 */
+	public function getLdap() {
+		return $this->ldap;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getLdapAdminUser() {
+		return $this->ldapAdminUser;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getLdapAdminPassword() {
+		return $this->ldapAdminPassword;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getLdapBaseDN() {
+		return $this->ldapBaseDN;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getLdapHost() {
+		return $this->ldapHost;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getLdapHostWithoutScheme() {
+		return $this->featureContext->removeSchemeFromUrl($this->ldapHost);
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getLdapUsersOU() {
+		return $this->ldapUsersOU;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getLdapGroupsOU() {
+		return $this->ldapGroupsOU;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getLdapPort() {
+		return $this->ldapPort;
+	}
 
 	/**
 	 * @return void
