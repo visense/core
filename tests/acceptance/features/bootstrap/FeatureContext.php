@@ -56,7 +56,6 @@ class FeatureContext extends BehatVariablesContext {
 	private $toDeleteLdapConfigs = [];
 	private $oldConfig = [];
 
-
 	/**
 	 * @return Ldap
 	 */

@@ -623,25 +623,12 @@ trait Provisioning {
 		$requests = [];
 		$client = new Client();
 
-		if (\getenv("TEST_EXTERNAL_USER_BACKENDS") === "true") {
-			foreach ($bodies as $body) {
+		foreach ($bodies as $body) {
+			if (\getenv("TEST_EXTERNAL_USER_BACKENDS") === "true") {
 				$this->createALdapUser($body);
-				$this->addUserToCreatedUsersList(
-					$body["userid"],
-					$body["password"],
-					$body["displayName"],
-					$body["email"]
-				);
-				\array_push($this->ldapCreatedUsers, $body['userid']);
 				$this->theLdapUsersHaveBeenReSynced();
 				$this->countUsersCreated += 1;
-				if ($initialize) {
-					$this->initializeUser($body["userid"], $body["password"]);
-				}
-			}
-			return;
-		} else {
-			foreach ($bodies as $body) {
+			} else {
 				// Create a OCS request for creating the user. The request is not sent to the server yet.
 				$request = OcsApiHelper::createOcsRequest(
 					$this->getBaseUrl(),
@@ -657,21 +644,23 @@ trait Provisioning {
 			}
 		}
 
-		$results = HttpRequestHelper::sendBatchRequest($requests, $client);
-		// Retrieve all failures.
-		foreach ($results->getFailures() as $e) {
-			$failedUser = $e->getRequest()->getBody()->getFields()['userid'];
-			$message = $this->getResponseXml($e->getResponse())->xpath("/ocs/meta/message");
-			if ($message && (string) $message[0] === "User already exists") {
-				Assert::fail(
-					"Could not create user '$failedUser' as it already exists. " .
-					"Please delete the user to run tests again."
+		if (\getenv("TEST_EXTERNAL_USER_BACKENDS") !== "true") {
+			$results = HttpRequestHelper::sendBatchRequest($requests, $client);
+			// Retrieve all failures.
+			foreach ($results->getFailures() as $e) {
+				$failedUser = $e->getRequest()->getBody()->getFields()['userid'];
+				$message = $this->getResponseXml($e->getResponse())->xpath("/ocs/meta/message");
+				if ($message && (string)$message[0] === "User already exists") {
+					Assert::fail(
+						"Could not create user '$failedUser' as it already exists. " .
+						"Please delete the user to run tests again."
+					);
+				}
+				throw new Exception(
+					"could not create user. "
+					. $e->getResponse()->getStatusCode() . " " . $e->getResponse()->getBody()
 				);
 			}
-			throw new Exception(
-				"could not create user. "
-				. $e->getResponse()->getStatusCode() . " " . $e->getResponse()->getBody()
-			);
 		}
 
 		// Create requests for setting displayname and email for the newly created users.
