@@ -465,8 +465,8 @@ trait Provisioning {
 	}
 
 	/**
-	 * @param $setDefaultAttributes
-	 * @param $table
+	 * @param boolean $setDefaultAttributes
+	 * @param array $table
 	 *
 	 * @return array
 	 */
@@ -513,12 +513,11 @@ trait Provisioning {
 	 * ldap-user are re-synced after creating a new user
 	 *
 	 * @param array $setting
-	 * @param boolean $initialize
 	 *
 	 * @return void
 	 * @throws Exception
 	 */
-	public function createALdapUser($setting, $initialize) {
+	public function createALdapUser($setting) {
 		$ou = "TestUsers";
 		$newDN = 'uid=' . $setting["userid"] . ',ou=' . $ou . ',' . 'dc=owncloud,dc=com';
 		$uidNumber = ($this->countUsersCreated === null ? 0 : $this->countUsersCreated) + 1;
@@ -583,15 +582,17 @@ trait Provisioning {
 	}
 
 	/**
-	 * delete all imported ldap users and groups
+	 * @AfterScenario
 	 *
 	 * @return void
 	 * @throws Exception
 	 */
-	public function deleteUserAndGroups() {
+	public function afterScenario() {
+		//delete created ldap users
 		$this->ldap->delete(
 			"ou=" . $this->ldapUsersOU . "," . $this->ldapBaseDN, true
 		);
+		//delete all created ldap groups
 		$this->ldap->delete(
 			"ou=" . $this->ldapGroupsOU . "," . $this->ldapBaseDN, true
 		);
@@ -610,18 +611,8 @@ trait Provisioning {
 	}
 
 	/**
-	 * @AfterScenario
-	 *
-	 * @return void
-	 * @throws Exception
-	 */
-	public function afterScenario() {
-		$this->deleteUserAndGroups();
-	}
-
-	/**
-	 * @param $doNotInitialize
-	 * @param $bodies
+	 * @param boolean $doNotInitialize
+	 * @param array $bodies
 	 *
 	 * @throws Exception
 	 */
@@ -632,7 +623,7 @@ trait Provisioning {
 
 		if (\getenv("TEST_EXTERNAL_USER_BACKENDS") === "true") {
 			foreach ($bodies as $body) {
-				$this->createALdapUser($body, $initialize);
+				$this->createALdapUser($body);
 				$this->addUserToCreatedUsersList(
 					$body["userid"],
 					$body["password"],

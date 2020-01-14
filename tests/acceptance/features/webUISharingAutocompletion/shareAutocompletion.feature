@@ -30,7 +30,6 @@ Feature: Autocompletion of share-with names
       | users-finance |
       | other         |
 
-
   @skipOnLDAP @user_ldap-issue-175
   @smokeTest
   Scenario: autocompletion of regular existing users

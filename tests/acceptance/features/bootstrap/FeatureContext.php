@@ -22,7 +22,6 @@
  */
 
 use rdx\behatvars\BehatVariablesContext;
-use Zend\Ldap\Ldap;
 
 require_once 'bootstrap.php';
 
@@ -33,7 +32,7 @@ class FeatureContext extends BehatVariablesContext {
 	use BasicStructure;
 
 	/**
-	 * @var Ldap
+	 * @var string
 	 */
 	private $ldap;
 	private $ldapBaseDN;
