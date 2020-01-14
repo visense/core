@@ -590,26 +590,26 @@ trait Provisioning {
 	 * @throws Exception
 	 */
 	public function afterScenario() {
-		//delete created ldap users
-		$this->ldap->delete(
-			"ou=" . $this->ldapUsersOU . "," . $this->ldapBaseDN, true
-		);
-		//delete all created ldap groups
-		$this->ldap->delete(
-			"ou=" . $this->ldapGroupsOU . "," . $this->ldapBaseDN, true
-		);
-		foreach ($this->toDeleteDNs as $dn) {
-			$this->ldap->delete($dn, true);
+		if (\getenv("TEST_EXTERNAL_USER_BACKENDS") === true) {
+			//delete created ldap users
+			$this->ldap->delete(
+				"ou=" . $this->ldapUsersOU . "," . $this->ldapBaseDN, true
+			);
+			//delete all created ldap groups
+			$this->ldap->delete(
+				"ou=" . $this->ldapGroupsOU . "," . $this->ldapBaseDN, true
+			);
+			foreach ($this->toDeleteDNs as $dn) {
+				$this->ldap->delete($dn, true);
+			}
+			foreach ($this->ldapCreatedUsers as $user) {
+				$this->rememberThatUserIsNotExpectedToExist($user);
+			}
+			foreach ($this->ldapCreatedGroups as $group) {
+				$this->rememberThatGroupIsNotExpectedToExist($group);
+			}
+			$this->theLdapUsersHaveBeenResynced();
 		}
-
-		foreach ($this->ldapCreatedUsers as $user) {
-			$this->rememberThatUserIsNotExpectedToExist($user);
-		}
-		foreach ($this->ldapCreatedGroups as $group) {
-			$this->rememberThatGroupIsNotExpectedToExist($group);
-		}
-
-		$this->theLdapUsersHaveBeenResynced();
 	}
 
 	/**
