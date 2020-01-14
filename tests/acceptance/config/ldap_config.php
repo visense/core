@@ -1,4 +1,9 @@
 <?php
+/**
+ * @author JankariTech <info@jankaritech.com>
+ * 
+ * Ldap user-group config
+ */
 $bdn = 'dc=owncloud,dc=com';
 $adn = 'cn=admin,dc=owncloud,dc=com';
 $apwd = 'admin';

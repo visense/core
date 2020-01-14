@@ -398,6 +398,7 @@ trait Provisioning {
 	/**
 	 * @param $suiteParameters
 	 *
+	 * @return void
 	 * @throws \Exception
 	 * @throws \LdapException
 	 */
@@ -453,6 +454,7 @@ trait Provisioning {
 	}
 
 	/**
+	 * @return void
 	 * @throws Exception
 	 */
 	public function theLdapUsersHaveBeenReSynced() {
@@ -538,6 +540,7 @@ trait Provisioning {
 	/**
 	 * @param string $group group name
 	 *
+	 * @return void
 	 * @throws Exception
 	 * @throws LdapException
 	 */
@@ -614,6 +617,7 @@ trait Provisioning {
 	 * @param boolean $initialize
 	 * @param array $bodies
 	 *
+	 * @return void
 	 * @throws Exception
 	 */
 	public function usersHaveBeenCreated($initialize, $bodies) {
@@ -639,7 +643,7 @@ trait Provisioning {
 			return;
 		} else {
 			foreach ($bodies as $body) {
-			// Create a OCS request for creating the user. The request is not sent to the server yet.
+				// Create a OCS request for creating the user. The request is not sent to the server yet.
 				$request = OcsApiHelper::createOcsRequest(
 					$this->getBaseUrl(),
 					$this->getAdminUsername(),
@@ -722,9 +726,7 @@ trait Provisioning {
 		$this->verifyTableNodeColumns($table, ['username'], ['displayname', 'email', 'password']);
 		$table = $table->getColumnsHash();
 		$setDefaultAttributes = $setDefaultAttributes !== "";
-		var_dump($doNotInitialize);
 		$initialize = $doNotInitialize === "";
-		var_dump($initialize);
 		$bodies = $this->setAttributesForUser($setDefaultAttributes, $table);
 		$this->usersHaveBeenCreated(
 			$initialize,
@@ -2263,9 +2265,6 @@ trait Provisioning {
 						"could not create group. Error: {$e}"
 					);
 				}
-
-
-
 				break;
 			default:
 				throw new InvalidArgumentException(
