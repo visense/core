@@ -555,7 +555,6 @@ trait Provisioning {
 		$this->ldap->add($newDN, $entry);
 		\array_push($this->ldapCreatedGroups, $group);
 		$this->theLdapUsersHaveBeenReSynced();
-		$this->addGroupToCreatedGroupsList($group);
 	}
 
 	/**
@@ -732,6 +731,9 @@ trait Provisioning {
 			$initialize,
 			$bodies
 		);
+		foreach ($bodies as $expectedUser) {
+			$this->userShouldExist($expectedUser["userid"]);
+		}
 	}
 
 	/**
@@ -2046,8 +2048,10 @@ trait Provisioning {
 				}
 				break;
 			case "ldap":
-				echo "adding users to groups in LDAP is not implemented, " .
-					"so assume user is in group\n";
+				$this->addUserToLdapGroup(
+					$user,
+					$group
+				);
 				break;
 			default:
 				throw new InvalidArgumentException(
@@ -2160,7 +2164,8 @@ trait Provisioning {
 	public function theseGroupsHaveBeenCreated(TableNode $table) {
 		$this->verifyTableNodeColumns($table, ['groupname']);
 		foreach ($table as $row) {
-			$this->createTheGroup($row['groupname']);
+			$this->createTheGroup($row["groupname"]);
+			$this->groupShouldExist($row["groupname"]);
 		}
 	}
 
@@ -2273,6 +2278,42 @@ trait Provisioning {
 		}
 
 		$this->addGroupToCreatedGroupsList($group, true, $groupCanBeDeleted);
+	}
+
+	/**
+	 * @param string $attribute
+	 * @param string $entry
+	 * @param string $value
+	 * @param bool $append
+	 *
+	 * @return void
+	 */
+	public function setTheLdapAttributeOfTheEntryTo(
+		$attribute, $entry, $value, $append=false
+	) {
+		$ldapEntry = $this->ldap->getEntry($entry . "," . $this->ldapBaseDN);
+		Zend\Ldap\Attribute::setAttribute($ldapEntry, $attribute, $value, $append);
+		$this->ldap->update($entry . "," . $this->ldapBaseDN, $ldapEntry);
+	}
+
+	/**
+	 * @param string $user
+	 * @param string $group
+	 * @param string|null $ou
+	 *
+	 * @return void
+	 */
+	public function addUserToLdapGroup($user, $group, $ou = null) {
+		if ($ou === null) {
+			$ou = $this->getLdapGroupsOU();
+		}
+
+		$this->setTheLdapAttributeOfTheEntryTo(
+			"memberUid",
+			"cn=$group,ou=$ou",
+			$user,
+			true
+		);
 	}
 
 	/**
