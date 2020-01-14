@@ -534,18 +534,6 @@ trait Provisioning {
 		$entry['gidNumber'] = 5000;
 		$entry['uidNumber'] = $uidNumber;
 		$this->ldap->add($newDN, $entry);
-		$this->addUserToCreatedUsersList(
-			$setting["userid"],
-			$setting["password"],
-			$setting["displayName"],
-			$setting["email"]
-		);
-		\array_push($this->ldapCreatedUsers, $setting['userid']);
-		$this->theLdapUsersHaveBeenReSynced();
-		$this->countUsersCreated += 1;
-		if ($initialize) {
-			$this->initializeUser($setting["userid"], $setting["password"]);
-		}
 	}
 
 	/**
@@ -562,7 +550,7 @@ trait Provisioning {
 		$entry['objectclass'][] = 'posixGroup';
 		$entry['objectclass'][] = 'top';
 		$entry['gidNumber'] = 5000;
-		$resp = $this->ldap->add($newDN, $entry);
+		$this->ldap->add($newDN, $entry);
 		\array_push($this->ldapCreatedGroups, $group);
 		$this->theLdapUsersHaveBeenReSynced();
 		$this->addGroupToCreatedGroupsList($group);
@@ -642,12 +630,26 @@ trait Provisioning {
 		$requests = [];
 		$client = new Client();
 
-		foreach ($bodies as $body) {
-			if (\getenv("TEST_EXTERNAL_USER_BACKENDS") === "true") {
+		if (\getenv("TEST_EXTERNAL_USER_BACKENDS") === "true") {
+			foreach ($bodies as $body) {
 				$this->createALdapUser($body, $initialize);
-				return;
-			} else {
-				// Create a OCS request for creating the user. The request is not sent to the server yet.
+				$this->addUserToCreatedUsersList(
+					$body["userid"],
+					$body["password"],
+					$body["displayName"],
+					$body["email"]
+				);
+				\array_push($this->ldapCreatedUsers, $body['userid']);
+				$this->theLdapUsersHaveBeenReSynced();
+				$this->countUsersCreated += 1;
+				if ($initialize) {
+					$this->initializeUser($body["userid"], $body["password"]);
+				}
+			}
+			return;
+		} else {
+			foreach ($bodies as $body) {
+			// Create a OCS request for creating the user. The request is not sent to the server yet.
 				$request = OcsApiHelper::createOcsRequest(
 					$this->getBaseUrl(),
 					$this->getAdminUsername(),
