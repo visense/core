@@ -611,13 +611,12 @@ trait Provisioning {
 	}
 
 	/**
-	 * @param boolean $doNotInitialize
+	 * @param boolean $initialize
 	 * @param array $bodies
 	 *
 	 * @throws Exception
 	 */
-	public function usersHaveBeenCreated($doNotInitialize, $bodies) {
-		$initialize = $doNotInitialize === "";
+	public function usersHaveBeenCreated($initialize, $bodies) {
 		$requests = [];
 		$client = new Client();
 
@@ -723,7 +722,9 @@ trait Provisioning {
 		$this->verifyTableNodeColumns($table, ['username'], ['displayname', 'email', 'password']);
 		$table = $table->getColumnsHash();
 		$setDefaultAttributes = $setDefaultAttributes !== "";
+		var_dump($doNotInitialize);
 		$initialize = $doNotInitialize === "";
+		var_dump($initialize);
 		$bodies = $this->setAttributesForUser($setDefaultAttributes, $table);
 		$this->usersHaveBeenCreated(
 			$initialize,
