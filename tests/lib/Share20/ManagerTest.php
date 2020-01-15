@@ -921,10 +921,10 @@ class ManagerTest extends \Test\TestCase {
 		$data[] = [$share, $fileReshare, 'Cannot set the requested share permissions for sharedfile', true];
 
 		// Normal reshare should just use supershare node attributes
-		// exception when trying to share with more attributes than supershare has
+		// exception when trying to remove share attributes that supershare has
 		$superShareAttributes = new ShareAttributes();
+		$superShareAttributes->setAttribute('test', 'test', true);
 		$shareAttributes = new ShareAttributes();
-		$shareAttributes->setAttribute('test', 'test', true);
 		$superShare = $this->createMock(IShare::class);
 		$superShare->method('getPermissions')->willReturn(17);
 		$superShare->method('getAttributes')->willReturn($superShareAttributes);
@@ -3635,24 +3635,24 @@ class ManagerTest extends \Test\TestCase {
 	}
 
 	/**
-	 * @dataProvider strictSubsetOfAttributesDataProvider
+	 * @dataProvider checkRequiredAttributesDataProvider
 	 *
 	 * @param IAttributes $allowedAttributes
 	 * @param IAttributes $newAttributes
 	 * @param boolean $expected
 	 */
-	public function testStrictSubsetOfAttributes($allowedAttributes, $newAttributes, $expected) {
+	public function testCheckRequiredAttributes($allowedAttributes, $newAttributes, $expected) {
 		$this->assertEquals(
 			$expected,
 			$this->invokePrivate(
 				$this->manager,
-				'strictSubsetOfAttributes',
+				'checkRequiredAttributes',
 				[$allowedAttributes, $newAttributes]
 			)
 		);
 	}
 
-	public function strictSubsetOfAttributesDataProvider() {
+	public function checkRequiredAttributesDataProvider() {
 		// no exception - supershare and share are equal
 		$superShareAttributes = new ShareAttributes();
 		$shareAttributes = new ShareAttributes();
@@ -3665,17 +3665,17 @@ class ManagerTest extends \Test\TestCase {
 		$shareAttributes->setAttribute('test', 'test', true);
 		$data[] = [$superShareAttributes,$shareAttributes, true];
 
-		// no exception - disabling attribute that supershare has enabled
+		// no exception - adding an attribute while supershare has none
+		$superShareAttributes = new ShareAttributes();
+		$shareAttributes = new ShareAttributes();
+		$shareAttributes->setAttribute('test', 'test', true);
+		$data[] = [$superShareAttributes,$shareAttributes, true];
+
+		// exception - disabling attribute that supershare has enabled
 		$superShareAttributes = new ShareAttributes();
 		$superShareAttributes->setAttribute('test', 'test', true);
 		$shareAttributes = new ShareAttributes();
 		$shareAttributes->setAttribute('test', 'test', false);
-		$data[] = [$superShareAttributes,$shareAttributes, true];
-
-		// exception - adding an attribute while supershare has none
-		$superShareAttributes = new ShareAttributes();
-		$shareAttributes = new ShareAttributes();
-		$shareAttributes->setAttribute('test', 'test', true);
 		$data[] = [$superShareAttributes,$shareAttributes, false];
 
 		// exception - enabling attribute that supershare has disabled

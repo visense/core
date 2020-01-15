@@ -372,14 +372,19 @@ class Manager implements IManager {
 			}
 		}
 
-		/* Check that we do not share with more permissions than we have */
+		/**
+		 * Check that we do not share with more permissions than we have
+		 */
 		if (!$this->strictSubsetOfPermissions($maxPermissions, $share->getPermissions())) {
 			$message_t = $this->l->t('Cannot set the requested share permissions for %s', [$share->getNode()->getName()]);
 			throw new GenericShareException($message_t, $message_t, 404);
 		}
 
-		/* Check that we do not share with more attributes than we have */
-		if ($maxAttributes !== null && !$this->strictSubsetOfAttributes($maxAttributes, $share->getAttributes())) {
+		/**
+		 * Check that all required share attributes that were set on the file
+		 * will be respected when reshared.
+		 */
+		if ($maxAttributes !== null && !$this->checkRequiredAttributes($maxAttributes, $share->getAttributes())) {
 			$message_t = $this->l->t('Cannot set the requested share attributes for %s', [$share->getNode()->getName()]);
 			throw new GenericShareException($message_t, $message_t, 404);
 		}
@@ -1824,31 +1829,17 @@ class Manager implements IManager {
 	}
 
 	/**
-	 * Check $newAttributes attribute is a subset of $allowedAttributes
+	 * Check $newAttributes attribute is a subset of $allowedAttributes.
+	 * Existing attributes cannot be modified
 	 *
-	 * @param IAttributes $allowedAttributes
+	 * @param IAttributes $requiredAttributes
 	 * @param IAttributes $newAttributes
 	 * @return boolean ,true if $allowedAttributes enabled is super set of $newAttributes enabled, else false
 	 */
-	private function strictSubsetOfAttributes($allowedAttributes, $newAttributes) {
-		// if both are empty, it is strict subset
-		if ((!$allowedAttributes || empty($allowedAttributes->toArray()))
-			&& (!$newAttributes || empty($newAttributes->toArray()))) {
-			return true;
-		}
-
-		// make sure that number of attributes is the same
-		if (\count($allowedAttributes->toArray()) !== \count($newAttributes->toArray())) {
-			return false;
-		}
-
-		// if number of attributes is the same, make sure that attributes are
-		// existing in allowed set and disabled attribute is not being enabled
-		foreach ($newAttributes->toArray() as $newAttribute) {
-			$allowedEnabled = $allowedAttributes->getAttribute($newAttribute['scope'], $newAttribute['key']);
-			if (($newAttribute['enabled'] === true && $allowedEnabled === false)
-				|| ($newAttribute['enabled'] === null && $allowedEnabled !== null)
-				|| $allowedEnabled === null) {
+	private function checkRequiredAttributes(IAttributes $requiredAttributes, IAttributes $newAttributes) {
+		foreach ($requiredAttributes->toArray() as $requiredAttribute) {
+			$newAttribute = $newAttributes->getAttribute($requiredAttribute['scope'], $requiredAttribute['key']);
+			if ($requiredAttribute['enabled'] !== $newAttribute) {
 				return false;
 			}
 		}
