@@ -2167,7 +2167,7 @@ trait Provisioning {
 			$this->getBaseUrl(),
 			$this->getOcPath()
 		);
-		$actualGroups = \json_decode($response["stdOut"]);
+		$actualGroups = \json_decode($response["stdOut"], true);
 		\array_map(
 			function ($group) use ($actualGroups) {
 				Assert::assertTrue(
