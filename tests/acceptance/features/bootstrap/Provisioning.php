@@ -2155,7 +2155,7 @@ trait Provisioning {
 		$this->verifyTableNodeColumns($table, ['groupname']);
 		$expectedGroups = [];
 		foreach ($table as $row) {
-			array_push($expectedGroups, $row["groupname"]);
+			\array_push($expectedGroups, $row["groupname"]);
 			$this->createTheGroup($row["groupname"]);
 		}
 		$response = SetupHelper::runOcc(
@@ -2167,18 +2167,23 @@ trait Provisioning {
 			$this->getBaseUrl(),
 			$this->getOcPath()
 		);
-		$responseString = preg_replace("/\r|\n/", "", $response["stdOut"]);
-		$responseString = trim($responseString, "[]");
-		$actualGroups = explode(",", $responseString);
-		$actualGroups = array_map(function ($item) {
-			$item = stripcslashes($item);
-			return trim($item,'"');
-		}, $actualGroups);
-		array_map(function ($group) use ($actualGroups) {
-			Assert::assertTrue(
-				in_array($group, $actualGroups)
-			);
-		}, $expectedGroups);
+		$responseString = \preg_replace("/\r|\n/", "", $response["stdOut"]);
+		$responseString = \trim($responseString, "[]");
+		$actualGroups = \explode(",", $responseString);
+		$actualGroups = \array_map(
+			function ($item) {
+				$item = \stripcslashes($item);
+				return \trim($item, '"');
+			},
+			$actualGroups
+		);
+		\array_map(
+			function ($group) use ($actualGroups) {
+				Assert::assertTrue(
+					\in_array($group, $actualGroups)
+				);
+			}, $expectedGroups
+		);
 	}
 
 	/**
