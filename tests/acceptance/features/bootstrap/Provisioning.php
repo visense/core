@@ -2173,7 +2173,7 @@ trait Provisioning {
 		$actualGroups = \array_map(
 			function ($item) {
 				$item = \stripcslashes($item);
-				return \trim($item, '"');
+				return \substr($item, 1, -1);
 			},
 			$actualGroups
 		);
