@@ -555,6 +555,7 @@ trait Provisioning {
 		$this->ldap->add($newDN, $entry);
 		\array_push($this->ldapCreatedGroups, $group);
 		$this->theLdapUsersHaveBeenReSynced();
+		$this->addGroupToCreatedGroupsList($group);
 	}
 
 	/**
@@ -590,7 +591,7 @@ trait Provisioning {
 	 * @throws Exception
 	 */
 	public function afterScenario() {
-		if (\getenv("TEST_EXTERNAL_USER_BACKENDS") === true) {
+		if (\getenv("TEST_EXTERNAL_USER_BACKENDS") === "true") {
 			//delete created ldap users
 			$this->ldap->delete(
 				"ou=" . $this->ldapUsersOU . "," . $this->ldapBaseDN, true
@@ -2152,10 +2153,32 @@ trait Provisioning {
 	 */
 	public function theseGroupsHaveBeenCreated(TableNode $table) {
 		$this->verifyTableNodeColumns($table, ['groupname']);
+		$expectedGroups = [];
 		foreach ($table as $row) {
+			array_push($expectedGroups, $row["groupname"]);
 			$this->createTheGroup($row["groupname"]);
-			$this->groupShouldExist($row["groupname"]);
 		}
+		$response = SetupHelper::runOcc(
+			[
+				"group:list --output=json"
+			],
+			$this->getAdminUsername(),
+			$this->getAdminPassword(),
+			$this->getBaseUrl(),
+			$this->getOcPath()
+		);
+		$responseString = preg_replace("/\r|\n/", "", $response["stdOut"]);
+		$responseString = trim($responseString, "[]");
+		$actualGroups = explode(",", $responseString);
+		$actualGroups = array_map(function ($item) {
+			$item = stripcslashes($item);
+			return trim($item,'"');
+		}, $actualGroups);
+		array_map(function ($group) use ($actualGroups) {
+			Assert::assertTrue(
+				in_array($group, $actualGroups)
+			);
+		}, $expectedGroups);
 	}
 
 	/**
