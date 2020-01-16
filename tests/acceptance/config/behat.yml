@@ -13,6 +13,7 @@ default:
             regularUserPassword: 123456
             ocPath: apps/testing/api/v1/occ
         - AppManagementContext:
+        - AppConfigurationContext:
         - CalDavContext:
         - CardDavContext:
         - ChecksumContext:
@@ -26,12 +27,14 @@ default:
       contexts:
         - FeatureContext: *common_feature_context_params
         - CorsContext:
+        - AuthContext:
 
     apiAuthOcs:
       paths:
         - '%paths.base%/../features/apiAuthOcs'
       contexts:
         - FeatureContext: *common_feature_context_params
+        - AuthContext:
 
     apiAuthWebDav:
       paths:
@@ -43,6 +46,7 @@ default:
         - SearchContext:
         - PublicWebDavContext:
         - WebDavPropertiesContext:
+        - AuthContext:
 
     apiCapabilities:
       paths:
@@ -51,6 +55,7 @@ default:
         - FeatureContext: *common_feature_context_params
         - CapabilitiesContext:
         - OccContext:
+        - AppConfigurationContext:
 
     apiComments:
       paths:
@@ -83,6 +88,7 @@ default:
         - FeatureContext: *common_feature_context_params
         - OccContext:
         - OccUsersGroupsContext:
+        - AuthContext:
 
     apiProvisioning-v2:
       paths:
@@ -91,6 +97,7 @@ default:
         - FeatureContext: *common_feature_context_params
         - OccContext:
         - OccUsersGroupsContext:
+        - AuthContext:
 
     apiProvisioningGroups-v1:
       paths:
@@ -123,6 +130,7 @@ default:
       contexts:
         - FeatureContext: *common_feature_context_params
         - ShareesContext:
+        - AppConfigurationContext:
 
     apiShareManagement:
       paths:

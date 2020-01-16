@@ -26,7 +26,7 @@ use Behat\Gherkin\Node\TableNode;
 /**
  * Authentication functions
  */
-trait Auth {
+class AuthContext implements \Behat\Behat\Context\Context {
 	/**
 	 * @var string
 	 */

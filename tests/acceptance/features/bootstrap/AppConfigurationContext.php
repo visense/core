@@ -32,7 +32,7 @@ use Behat\Gherkin\Node\TableNode;
 /**
  * AppConfiguration trait
  */
-trait AppConfiguration {
+class AppConfigurationContext implements \Behat\Behat\Context\Context {
 
 	/**
 	 * @var WebUIGeneralContext
