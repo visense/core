@@ -522,7 +522,7 @@ trait Provisioning {
 	public function createALdapUser($setting) {
 		$ou = "TestUsers";
 		$newDN = 'uid=' . $setting["userid"] . ',ou=' . $ou . ',' . 'dc=owncloud,dc=com';
-		$uidNumber = ($this->countUsersCreated === null ? 0 : $this->countUsersCreated) + 1;
+		$uidNumber = ($this->countLDAPUsersCreated === null ? 0 : $this->countLDAPUsersCreated) + 1;
 		$entry = [];
 		$entry['cn'] = $setting["userid"];
 		$entry['sn'] = $setting["displayName"];
@@ -535,6 +535,9 @@ trait Provisioning {
 		$entry['gidNumber'] = 5000;
 		$entry['uidNumber'] = $uidNumber;
 		$this->ldap->add($newDN, $entry);
+		$this->theLdapUsersHaveBeenReSynced();
+		$this->countLDAPUsersCreated += 1;
+		\array_push($this->ldapCreatedUsers, $setting["userid"]);
 	}
 
 	/**
@@ -555,33 +558,7 @@ trait Provisioning {
 		$this->ldap->add($newDN, $entry);
 		\array_push($this->ldapCreatedGroups, $group);
 		$this->theLdapUsersHaveBeenReSynced();
-		$this->addGroupToCreatedGroupsList($group);
-	}
-
-	/**
-	 * @Given these users have been created using LDAP server:
-	 *
-	 * @param TableNode $table
-	 *
-	 * @return void
-	 * @throws Exception
-	 */
-	public function followingUsersHaveBeenCreatedWithoutSkeletonFilesUsingLDAPServer($table) {
-		$table = $table->getColumnsHash();
-		$setDefaultAttributes = false;
-		$bodies = $this->setAttributesForUser($setDefaultAttributes, $table);
-		foreach ($bodies as $body) {
-			$this->createALdapUser($body);
-		}
-		$this->theAdministratorGetsTheListOfAllUsersUsingTheProvisioningApi();
-		$usersList = [];
-		foreach ($table as $row) {
-			\array_push($usersList, $row["username"]);
-		}
-		$respondedArray = $this->getArrayOfUsersResponded($this->getResponse());
-		foreach ($usersList as $user) {
-			Assert::assertTrue(\in_array($user, $respondedArray, 'true'));
-		}
+		\array_push($this->ldapCreatedGroups, $group);
 	}
 
 	/**
@@ -600,9 +577,6 @@ trait Provisioning {
 			$this->ldap->delete(
 				"ou=" . $this->ldapGroupsOU . "," . $this->ldapBaseDN, true
 			);
-			foreach ($this->toDeleteDNs as $dn) {
-				$this->ldap->delete($dn, true);
-			}
 			foreach ($this->ldapCreatedUsers as $user) {
 				$this->rememberThatUserIsNotExpectedToExist($user);
 			}
@@ -627,8 +601,6 @@ trait Provisioning {
 		foreach ($bodies as $body) {
 			if (\getenv("TEST_EXTERNAL_USER_BACKENDS") === "true") {
 				$this->createALdapUser($body);
-				$this->theLdapUsersHaveBeenReSynced();
-				$this->countUsersCreated += 1;
 			} else {
 				// Create a OCS request for creating the user. The request is not sent to the server yet.
 				$request = OcsApiHelper::createOcsRequest(
@@ -2158,23 +2130,6 @@ trait Provisioning {
 			\array_push($expectedGroups, $row["groupname"]);
 			$this->createTheGroup($row["groupname"]);
 		}
-		$response = SetupHelper::runOcc(
-			[
-				"group:list --output=json"
-			],
-			$this->getAdminUsername(),
-			$this->getAdminPassword(),
-			$this->getBaseUrl(),
-			$this->getOcPath()
-		);
-		$actualGroups = \json_decode($response["stdOut"], true);
-		\array_map(
-			function ($group) use ($actualGroups) {
-				Assert::assertTrue(
-					\in_array($group, $actualGroups)
-				);
-			}, $expectedGroups
-		);
 	}
 
 	/**
