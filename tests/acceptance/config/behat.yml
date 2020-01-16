@@ -80,6 +80,7 @@ default:
         - FeatureContext: *common_feature_context_params
         - FederationContext:
         - WebDavPropertiesContext:
+        - AppConfigurationContext:
 
     apiProvisioning-v1:
       paths:
@@ -123,6 +124,7 @@ default:
         - OccContext:
         - TrashbinContext:
         - WebDavPropertiesContext:
+        - AppConfigurationContext:
 
     apiSharees:
       paths:
@@ -141,6 +143,7 @@ default:
         - PublicWebDavContext:
         - TrashbinContext:
         - WebDavPropertiesContext:
+        - AppConfigurationContext:
 
     apiShareManagementBasic:
       paths:
@@ -151,6 +154,7 @@ default:
         - PublicWebDavContext:
         - TrashbinContext:
         - WebDavPropertiesContext:
+        - AuthContext:
 
     apiShareOperations:
       paths:
@@ -171,6 +175,7 @@ default:
         - PublicWebDavContext:
         - TrashbinContext:
         - WebDavPropertiesContext:
+        - AppConfigurationContext:
 
     apiSharePublicLink2:
       paths:
@@ -181,6 +186,7 @@ default:
         - PublicWebDavContext:
         - TrashbinContext:
         - WebDavPropertiesContext:
+        - AppConfigurationContext:
 
     apiShareReshare1:
       paths:
@@ -201,6 +207,7 @@ default:
         - PublicWebDavContext:
         - TrashbinContext:
         - WebDavPropertiesContext:
+        - AppConfigurationContext:
 
     apiShareUpdate:
       paths:
@@ -211,6 +218,7 @@ default:
         - PublicWebDavContext:
         - TrashbinContext:
         - WebDavPropertiesContext:
+        - AppConfigurationContext:
 
     apiSharingNotifications:
       paths:
@@ -218,6 +226,7 @@ default:
       contexts:
         - FeatureContext: *common_feature_context_params
         - NotificationsCoreContext:
+        - AppConfigurationContext:
 
     apiTags:
       paths:
@@ -233,6 +242,7 @@ default:
         - FeatureContext: *common_feature_context_params
         - OccContext:
         - TrashbinContext:
+        - AppConfigurationContext:
 
     apiVersions:
       paths:
@@ -290,6 +300,7 @@ default:
         - FeatureContext: *common_feature_context_params
         - LoggingContext:
         - WebDavPropertiesContext:
+        - AppConfigurationContext:
 
     apiWebdavUpload:
       paths:
@@ -321,6 +332,7 @@ default:
       contexts:
         - FeatureContext: *common_feature_context_params
         - OccContext:
+        - AuthContext:
 
     cliMain:
       paths:

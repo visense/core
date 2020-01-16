@@ -209,7 +209,7 @@ class FeatureContext extends BehatVariablesContext {
 	 *
 	 * @var AuthContext
 	 */
-	private $authContext;
+	public $authContext;
 
 	/**
 	 * BasicStructure constructor.
@@ -2594,7 +2594,9 @@ class FeatureContext extends BehatVariablesContext {
 		$this->ocsContext = new OCSContext();
 		$this->authContext = new AuthContext();
 		$this->ocsContext->before($scope);
+		$this->authContext->before($scope);
 		$environment->registerContext($this->ocsContext);
+		$environment->registerContext($this->authContext);
 	}
 
 	/**
