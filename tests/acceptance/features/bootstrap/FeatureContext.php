@@ -203,7 +203,7 @@ class FeatureContext extends BehatVariablesContext {
 	 *
 	 * @var OCSContext
 	 */
-	private $ocsContext;
+	public $ocsContext;
 
 	/**
 	 *
@@ -2594,7 +2594,7 @@ class FeatureContext extends BehatVariablesContext {
 		$this->ocsContext = new OCSContext();
 		$this->authContext = new AuthContext();
 		$this->ocsContext->before($scope);
-		$this->authContext->setUpScenario();
+		$this->authContext->setUpScenario($scope);
 		$environment->registerContext($this->ocsContext);
 		$environment->registerContext($this->authContext);
 	}
