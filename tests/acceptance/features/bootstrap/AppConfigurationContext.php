@@ -22,18 +22,19 @@
  *
  */
 
+use Behat\Behat\Hook\Scope\BeforeScenarioScope;
 use PHPUnit\Framework\Assert;
 use TestHelpers\AppConfigHelper;
 use TestHelpers\HttpRequestHelper;
 use TestHelpers\OcsApiHelper;
 use TestHelpers\SetupHelper;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Behat\Context\Context;
 
 /**
  * AppConfiguration trait
  */
-class AppConfigurationContext implements \Behat\Behat\Context\Context {
-
+class AppConfigurationContext implements Context {
 	/**
 	 * @var WebUIGeneralContext
 	 */
@@ -62,6 +63,11 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	private $initialTrustedServer;
 
 	/**
+	 * @var FeatureContext
+	 */
+	private $featureContext;
+
+	/**
 	 * @When /^the administrator sets parameter "([^"]*)" of app "([^"]*)" to "([^"]*)"$/
 	 *
 	 * @param string $parameter
@@ -73,12 +79,12 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	public function adminSetsServerParameterToUsingAPI(
 		$parameter, $app, $value
 	) {
-		$user = $this->currentUser;
-		$this->currentUser = $this->getAdminUsername();
+		$user = $this->featureContext->getCurrentUser();
+		$this->featureContext->setCurrentUser($this->featureContext->getAdminUsername());
 
 		$this->modifyAppConfig($app, $parameter, $value);
 
-		$this->currentUser = $user;
+		$this->featureContext->setCurrentUser($user);
 	}
 
 	/**
@@ -142,11 +148,13 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	public function userGetsCapabilities($username) {
-		$user = $this->getActualUsername($username);
-		$password = $this->getPasswordForUser($user);
-		$this->response = OcsApiHelper::sendRequest(
-			$this->getBaseUrl(), $user, $password, 'GET', '/cloud/capabilities',
-			[], $this->getOcsApiVersion()
+		$user = $this->featureContext->getActualUsername($username);
+		$password = $this->featureContext->getPasswordForUser($user);
+		$this->featureContext->setResponse(
+			OcsApiHelper::sendRequest(
+				$this->featureContext->getBaseUrl(), $user, $password, 'GET', '/cloud/capabilities',
+				[], $this->featureContext->getOcsApiVersion()
+			)
 		);
 	}
 
@@ -160,7 +168,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	public function userGetsCapabilitiesCheckResponse($username) {
 		$this->userGetsCapabilities($username);
 		Assert::assertEquals(
-			200, $this->response->getStatusCode()
+			200, $this->featureContext->getResponse()->getStatusCode()
 		);
 	}
 
@@ -170,7 +178,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	public function theUserGetsCapabilities() {
-		$this->userGetsCapabilities($this->getCurrentUser());
+		$this->userGetsCapabilities($this->featureContext->getCurrentUser());
 	}
 
 	/**
@@ -179,7 +187,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	public function theUserGetsCapabilitiesCheckResponse() {
-		$this->userGetsCapabilitiesCheckResponse($this->getCurrentUser());
+		$this->userGetsCapabilitiesCheckResponse($this->featureContext->getCurrentUser());
 	}
 
 	/**
@@ -188,7 +196,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	public function theAdministratorGetsCapabilities() {
-		$this->userGetsCapabilities($this->getAdminUsername());
+		$this->userGetsCapabilities($this->featureContext->getAdminUsername());
 	}
 
 	/**
@@ -197,14 +205,14 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	public function theAdministratorGetsCapabilitiesCheckResponse() {
-		$this->userGetsCapabilitiesCheckResponse($this->getAdminUsername());
+		$this->userGetsCapabilitiesCheckResponse($this->featureContext->getAdminUsername());
 	}
 
 	/**
 	 * @return string latest retrieved capabilities in XML format
 	 */
 	public function getCapabilitiesXml() {
-		return $this->getResponseXml()->data->capabilities;
+		return $this->featureContext->getResponseXml()->data->capabilities;
 	}
 
 	/**
@@ -287,7 +295,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 */
 	public function wasCapabilitySet($capabilitiesApp, $capabilitiesParameter) {
 		return (bool) $this->getParameterValueFromXml(
-			$this->savedCapabilitiesXml[$this->getBaseUrl()],
+			$this->savedCapabilitiesXml[$this->featureContext->getBaseUrl()],
 			$capabilitiesApp,
 			$capabilitiesParameter
 		);
@@ -305,18 +313,18 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 */
 	public function setCapabilities($capabilitiesArray) {
 		$savedCapabilitiesChanges = AppConfigHelper::setCapabilities(
-			$this->getBaseUrl(),
-			$this->getAdminUsername(),
-			$this->getAdminPassword(),
+			$this->featureContext->getBaseUrl(),
+			$this->featureContext->getAdminUsername(),
+			$this->featureContext->getAdminPassword(),
 			$capabilitiesArray,
-			$this->savedCapabilitiesXml[$this->getBaseUrl()]
+			$this->savedCapabilitiesXml[$this->featureContext->getBaseUrl()]
 		);
 
-		if (!isset($this->savedCapabilitiesChanges[$this->getBaseUrl()])) {
-			$this->savedCapabilitiesChanges[$this->getBaseUrl()] = [];
+		if (!isset($this->savedCapabilitiesChanges[$this->featureContext->getBaseUrl()])) {
+			$this->savedCapabilitiesChanges[$this->featureContext->getBaseUrl()] = [];
 		}
-		$this->savedCapabilitiesChanges[$this->getBaseUrl()] = \array_merge(
-			$this->savedCapabilitiesChanges[$this->getBaseUrl()],
+		$this->savedCapabilitiesChanges[$this->featureContext->getBaseUrl()] = \array_merge(
+			$this->savedCapabilitiesChanges[$this->featureContext->getBaseUrl()],
 			$savedCapabilitiesChanges
 		);
 	}
@@ -330,13 +338,13 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 */
 	protected function modifyAppConfig($app, $parameter, $value) {
 		AppConfigHelper::modifyAppConfig(
-			$this->getBaseUrl(),
-			$this->getAdminUsername(),
-			$this->getAdminPassword(),
+			$this->featureContext->getBaseUrl(),
+			$this->featureContext->getAdminUsername(),
+			$this->featureContext->getAdminPassword(),
 			$app,
 			$parameter,
 			$value,
-			$this->ocsApiVersion
+			$this->featureContext->getOcsApiVersion()
 		);
 	}
 
@@ -347,11 +355,11 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 */
 	protected function modifyAppConfigs($appParameterValues) {
 		AppConfigHelper::modifyAppConfigs(
-			$this->getBaseUrl(),
-			$this->getAdminUsername(),
-			$this->getAdminPassword(),
+			$this->featureContext->getBaseUrl(),
+			$this->featureContext->getAdminUsername(),
+			$this->featureContext->getAdminPassword(),
 			$appParameterValues,
-			$this->ocsApiVersion
+			$this->featureContext->getOcsApiVersion()
 		);
 	}
 
@@ -362,25 +370,25 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	protected function setStatusTestingApp($enabled) {
-		$this->theUserSendsToOcsApiEndpoint(
+		$this->featureContext->ocsContext->theUserSendsToOcsApiEndpoint(
 			($enabled ? 'post' : 'delete'), '/cloud/apps/testing'
 		);
-		$this->theHTTPStatusCodeShouldBe('200');
-		if ($this->ocsApiVersion == 1) {
-			$this->ocsContext->theOCSStatusCodeShouldBe('100');
+		$this->featureContext->theHTTPStatusCodeShouldBe('200');
+		if ($this->featureContext->getOcsApiVersion() == 1) {
+			$this->featureContext->ocsContext->theOCSStatusCodeShouldBe('100');
 		}
 
-		$this->theUserSendsToOcsApiEndpoint('get', '/cloud/apps?filter=enabled');
-		$this->theHTTPStatusCodeShouldBe('200');
+		$this->featureContext->ocsContext->theUserSendsToOcsApiEndpoint('get', '/cloud/apps?filter=enabled');
+		$this->featureContext->theHTTPStatusCodeShouldBe('200');
 		if ($enabled) {
 			Assert::assertContains(
 				'testing',
-				$this->response->getBody()->getContents()
+				$this->featureContext->getResponse()->getBody()->getContents()
 			);
 		} else {
 			Assert::assertNotContains(
 				'testing',
-				$this->response->getBody()->getContents()
+				$this->featureContext->getResponse()->getBody()->getContents()
 			);
 		}
 	}
@@ -393,16 +401,16 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	public function theAdministratorAddsUrlAsTrustedServerUsingTheTestingApi($url) {
-		$adminUser = $this->getAdminUsername();
+		$adminUser = $this->featureContext->getAdminUsername();
 		$response = OcsApiHelper::sendRequest(
-			$this->getBaseUrl(),
+			$this->featureContext->getBaseUrl(),
 			$adminUser,
-			$this->getAdminPassword(),
+			$this->featureContext->getAdminPassword(),
 			'POST',
 			"/apps/testing/api/v1/trustedservers",
-			['url' => $this->substituteInLineCodes($url)]
+			['url' => $this->featureContext->substituteInLineCodes($url)]
 		);
-		$this->setResponse($response);
+		$this->featureContext->setResponse($response);
 	}
 
 	/**
@@ -414,7 +422,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 */
 	private function getUrlStringForMessage($url) {
 		$text = $url;
-		$expectedUrl = $this->substituteInLineCodes($url);
+		$expectedUrl = $this->featureContext->substituteInLineCodes($url);
 		if ($expectedUrl !== $url) {
 			$text .= " ($expectedUrl)";
 		}
@@ -443,7 +451,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	public function urlShouldBeATrustedServer($url) {
 		$trustedServers = $this->getTrustedServers();
 		foreach ($trustedServers as $server => $id) {
-			if ($server === $this->substituteInLineCodes($url)) {
+			if ($server === $this->featureContext->substituteInLineCodes($url)) {
 				return;
 			}
 		}
@@ -464,7 +472,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 		foreach ($expected as $server) {
 			$found = false;
 			foreach ($trustedServers as $url => $id) {
-				if ($url === $this->substituteInLineCodes($server['url'])) {
+				if ($url === $this->featureContext->substituteInLineCodes($server['url'])) {
 					$found = true;
 					break;
 				}
@@ -484,7 +492,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 */
 	public function theAdministratorHasAddedUrlAsTrustedServer($url) {
 		$this->theAdministratorAddsUrlAsTrustedServerUsingTheTestingApi($url);
-		$status = $this->getResponse()->getStatusCode();
+		$status = $this->featureContext->featureContext->getResponse()->getStatusCode();
 		if ($status !== 201) {
 			throw new \Exception(
 				__METHOD__ .
@@ -502,16 +510,16 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	public function theAdministratorDeletesUrlFromTrustedServersUsingTheTestingApi($url) {
-		$adminUser = $this->getAdminUsername();
+		$adminUser = $this->featureContext->getAdminUsername();
 		$response = OcsApiHelper::sendRequest(
-			$this->getBaseUrl(),
+			$this->featureContext->getBaseUrl(),
 			$adminUser,
-			$this->getAdminPassword(),
+			$this->featureContext->getAdminPassword(),
 			'DELETE',
 			"/apps/testing/api/v1/trustedservers",
-			['url' => $this->substituteInLineCodes($url)]
+			['url' => $this->featureContext->substituteInLineCodes($url)]
 		);
-		$this->setResponse($response);
+		$this->featureContext->setResponse($response);
 	}
 
 	/**
@@ -524,7 +532,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	public function urlShouldNotBeATrustedServer($url) {
 		$trustedServers = $this->getTrustedServers();
 		foreach ($trustedServers as $server => $id) {
-			if ($server === $this->substituteInLineCodes($url)) {
+			if ($server === $this->featureContext->featureContext->substituteInLineCodes($url)) {
 				Assert::fail(
 					"URL " . $this->getUrlStringForMessage($url)
 					. " is a trusted server but is not expected to be"
@@ -539,15 +547,15 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	public function theAdministratorDeletesAllTrustedServersUsingTheTestingApi() {
-		$adminUser = $this->getAdminUsername();
+		$adminUser = $this->featureContext->getAdminUsername();
 		$response = OcsApiHelper::sendRequest(
-			$this->getBaseUrl(),
+			$this->featureContext->getBaseUrl(),
 			$adminUser,
-			$this->getAdminPassword(),
+			$this->featureContext->getAdminPassword(),
 			'DELETE',
-			"/apps/testing/api/v1/trustedservers/all"
+			"/apps/testing/api/v1->featureContext/trustedservers/all"
 		);
-		$this->setResponse($response);
+		$this->featureContext->setResponse($response);
 	}
 
 	/**
@@ -559,10 +567,10 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 		$this->theAdministratorDeletesAllTrustedServersUsingTheTestingApi();
 		Assert::assertEquals(
 			204,
-			$this->getResponse()->getStatusCode(),
+			$this->featureContext->getResponse()->getStatusCode(),
 			__METHOD__
 			. "Failed to clear all trusted servers"
-			. $this->getResponse()->getBody()->getContents()
+			. $this->featureContext->getResponse()->getBody()->getContents()
 		);
 	}
 
@@ -586,17 +594,17 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 */
 	public function getTrustedServers($server = 'LOCAL') {
 		if ($server === 'LOCAL') {
-			$url = $this->getLocalBaseUrl();
+			$url = $this->featureContext->getLocalBaseUrl();
 		} elseif ($server === 'REMOTE') {
-			$url = $this->getRemoteBaseUrl();
+			$url = $this->featureContext->getRemoteBaseUrl();
 		} else {
 			throw new \Exception(__METHOD__ . "Invalid value for server : $server");
 		}
-		$adminUser = $this->getAdminUsername();
+		$adminUser = $this->featureContext->getAdminUsername();
 		$response = OcsApiHelper::sendRequest(
 			$url,
 			$adminUser,
-			$this->getAdminPassword(),
+			$this->featureContext->getAdminPassword(),
 			'GET',
 			"/apps/testing/api/v1/trustedservers"
 		);
@@ -622,35 +630,27 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	}
 
 	/**
-	 * Setup any app config state.
-	 * This will be called before each scenario.
-	 *
-	 * @return void
-	 */
-	abstract protected function resetAppConfigs();
-
-	/**
 	 * @BeforeScenario
 	 *
 	 * @return void
 	 */
 	public function prepareParametersBeforeScenario() {
-		$user = $this->currentUser;
-		$this->currentUser = $this->getAdminUsername();
-		$previousServer = $this->currentServer;
+		$user = $this->featureContext->getCurrentUser();
+		$this->featureContext->setCurrentUser($this->featureContext->getAdminUsername());
+		$previousServer = $this->featureContext->getCurrentServer();
 		foreach (['LOCAL', 'REMOTE'] as $server) {
-			if (($server === 'LOCAL') || $this->federatedServerExists()) {
-				$this->usingServer($server);
-				$this->resetAppConfigs();
+			if (($server === 'LOCAL') || $this->featureContext->federatedServerExists()) {
+				$this->featureContext->usingServer($server);
+				$this->featureContext->resetAppConfigs();
 				$result = SetupHelper::runOcc(
-					['config:list', '--private'], $this->getAdminUsername(),
-					$this->getAdminPassword(), $this->getBaseUrl(), $this->getOcPath()
+					['config:list', '--private'], $this->featureContext->getAdminUsername(),
+					$this->featureContext->getAdminPassword(), $this->featureContext->getBaseUrl(), $this->featureContext->getOcPath()
 				);
 				$this->savedConfigList[$server] = \json_decode($result['stdOut'], true);
 			}
 		}
-		$this->usingServer($previousServer);
-		$this->currentUser = $user;
+		$this->featureContext->usingServer($previousServer);
+		$this->featureContext->setCurrentUser($user);
 	}
 
 	/**
@@ -676,7 +676,7 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 */
 	public function restoreTrustedServersAfterScenario() {
 		$this->restoreTrustedServers('LOCAL');
-		if ($this->federatedServerExists()) {
+		if ($this->featureContext->federatedServerExists()) {
 			$this->restoreTrustedServers('REMOTE');
 		}
 	}
@@ -704,11 +704,25 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 * @return void
 	 */
 	public function restoreParametersAfterScenario() {
-		$this->deleteTokenAuthEnforcedAfterScenario();
-		$user = $this->currentUser;
-		$this->currentUser = $this->getAdminUsername();
-		$this->runFunctionOnEveryServer([$this, 'restoreParameters']);
-		$this->currentUser = $user;
+		$this->featureContext->authContext->deleteTokenAuthEnforcedAfterScenario();
+		$user = $this->featureContext->getCurrentUser();
+		$this->featureContext->setCurrentUser($this->featureContext->getAdminUsername());
+		$this->featureContext->runFunctionOnEveryServer([$this, 'restoreParameters']);
+		$this->featureContext->setCurrentUser($user);
+	}
+
+	/**
+	 * @BeforeScenario
+	 *
+	 * @param BeforeScenarioScope $scope
+	 *
+	 * @return void
+	 */
+	public function setUpScenario(BeforeScenarioScope $scope) {
+		// Get the environment
+		$environment = $scope->getEnvironment();
+		// Get all the contexts you need in this context
+		$this->featureContext = $environment->getContext('FeatureContext');
 	}
 
 	/**
@@ -722,13 +736,13 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 	 *
 	 */
 	private function restoreParameters($server) {
-		if (\key_exists($this->getBaseUrl(), $this->savedCapabilitiesChanges)) {
-			$this->modifyAppConfigs($this->savedCapabilitiesChanges[$this->getBaseUrl()]);
+		if (\key_exists($this->featureContext->getBaseUrl(), $this->savedCapabilitiesChanges)) {
+			$this->modifyAppConfigs($this->savedCapabilitiesChanges[$this->featureContext->getBaseUrl()]);
 		}
 		$result = SetupHelper::runOcc(
-			['config:list'], $this->getAdminUsername(),
-			$this->getAdminPassword(), $this->getBaseUrl(),
-			$this->getOcPath()
+			['config:list'], $this->featureContext->getAdminUsername(),
+			$this->featureContext->getAdminPassword(), $this->featureContext->getBaseUrl(),
+			$this->featureContext->getOcPath()
 		);
 		$currentConfigList = \json_decode($result['stdOut'], true);
 		foreach ($currentConfigList['system'] as $configKey => $configValue) {
@@ -738,10 +752,10 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 			) {
 				SetupHelper::runOcc(
 					['config:system:delete', $configKey],
-					$this->getAdminUsername(),
-					$this->getAdminPassword(),
-					$this->getBaseUrl(),
-					$this->getOcPath()
+					$this->featureContext->getAdminUsername(),
+					$this->featureContext->getAdminPassword(),
+					$this->featureContext->getBaseUrl(),
+					$this->featureContext->getOcPath()
 				);
 			}
 		}
@@ -751,10 +765,10 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 			) {
 				SetupHelper::runOcc(
 					['config:system:set', "--type=json", "--value=" . \json_encode($configValue), $configKey],
-					$this->getAdminUsername(),
-					$this->getAdminPassword(),
-					$this->getBaseUrl(),
-					$this->getOcPath()
+					$this->featureContext->getAdminUsername(),
+					$this->featureContext->getAdminPassword(),
+					$this->featureContext->getBaseUrl(),
+					$this->featureContext->getOcPath()
 				);
 			}
 		}
@@ -768,10 +782,10 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 				) {
 					SetupHelper::runOcc(
 						['config:app:delete', $appName, $configKey],
-						$this->getAdminUsername(),
-						$this->getAdminPassword(),
-						$this->getBaseUrl(),
-						$this->getOcPath()
+						$this->featureContext->getAdminUsername(),
+						$this->featureContext->getAdminPassword(),
+						$this->featureContext->getBaseUrl(),
+						$this->featureContext->getOcPath()
 					);
 				} elseif (\array_key_exists($appName, $this->savedConfigList[$server]['apps'])
 					&& \array_key_exists($configKey, $this->savedConfigList[$server]['apps'][$appName])
@@ -787,10 +801,10 @@ class AppConfigurationContext implements \Behat\Behat\Context\Context {
 								$configKey,
 								"--value=" . $this->savedConfigList[$server]['apps'][$appName][$configKey]
 							],
-							$this->getAdminUsername(),
-							$this->getAdminPassword(),
-							$this->getBaseUrl(),
-							$this->getOcPath()
+							$this->featureContext->getAdminUsername(),
+							$this->featureContext->getAdminPassword(),
+							$this->featureContext->getBaseUrl(),
+							$this->featureContext->getOcPath()
 						);
 					}
 				}

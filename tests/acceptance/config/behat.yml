@@ -515,6 +515,7 @@ default:
         - '%paths.base%/../features/webUISharingAutocompletion'
       contexts:
         - FeatureContext: *common_feature_context_params
+        - AppConfigurationContext:
         - WebUIFilesContext:
         - WebUIGeneralContext:
         - WebUILoginContext:
@@ -527,6 +528,7 @@ default:
         - '%paths.base%/../features/webUISharingExternal'
       contexts:
         - FeatureContext: *common_feature_context_params
+        - AppConfigurationContext:
         - EmailContext:
         - FederationContext:
         - WebUIFilesContext:
@@ -582,6 +584,7 @@ default:
         - '%paths.base%/../features/webUISharingPublic'
       contexts:
         - FeatureContext: *common_feature_context_params
+        - AppConfigurationContext:
         - EmailContext:
         - OccContext:
         - PublicWebDavContext:

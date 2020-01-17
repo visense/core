@@ -23,11 +23,12 @@ use Behat\Behat\Hook\Scope\BeforeScenarioScope;
 use PHPUnit\Framework\Assert;
 use TestHelpers\HttpRequestHelper;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Behat\Context\Context;
 
 /**
  * Authentication functions
  */
-class AuthContext implements \Behat\Behat\Context\Context {
+class AuthContext implements Context {
 	/**
 	 * @var string
 	 */
@@ -89,10 +90,10 @@ class AuthContext implements \Behat\Behat\Context\Context {
 	 * get the app token that was last generated
 	 * app acceptance tests that have their own step code may need to use this
 	 *
-	 * @return string app token
+	 * @return array app token
 	 */
 	public function getAppTokens() {
-		$this->appTokens;
+		return $this->appTokens;
 	}
 
 	/**
@@ -395,7 +396,7 @@ class AuthContext implements \Behat\Behat\Context\Context {
 		];
 		$this->featureContext->setResponse(
 			HttpRequestHelper::delete(
-				$url, null, null, $headers, null, null, $this->cookieJar
+				$url, null, null, $headers, null, null, $this->featureContext->getCookieJar()
 			)
 		);
 	}
@@ -440,7 +441,7 @@ class AuthContext implements \Behat\Behat\Context\Context {
 			]
 		);
 		$headers = ['Content-Type' => 'application/json'];
-		$url = $this->getBaseUrl() . '/token/generate';
+		$url = $this->featureContext->getBaseUrl() . '/token/generate';
 		$this->featureContext->setResponse(HttpRequestHelper::post($url, null, null, $headers, $body));
 		$this->featureContext->theHTTPStatusCodeShouldBe("200");
 		$this->clientToken
@@ -646,7 +647,7 @@ class AuthContext implements \Behat\Behat\Context\Context {
 		// Request a new session and extract CSRF token
 		$this->featureContext->setResponse(
 			HttpRequestHelper::get(
-				$loginUrl, null, null, null, null, null, $this->cookieJar
+				$loginUrl, null, null, null, null, null, $this->featureContext->getCookieJar()
 			)
 		);
 		$this->featureContext->theHTTPStatusCodeShouldBeSuccess();

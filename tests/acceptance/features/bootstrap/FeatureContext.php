@@ -708,6 +708,15 @@ class FeatureContext extends BehatVariablesContext {
 	}
 
 	/**
+	 * @param string $user
+	 *
+	 * @return string
+	 */
+	public function setCurrentUser($user) {
+		$this->currentUser = $user;
+	}
+
+	/**
 	 * returns $this->response
 	 * some steps use that private var to store the response for other steps
 	 *
@@ -2593,9 +2602,12 @@ class FeatureContext extends BehatVariablesContext {
 		// that calls BasicStructure.php
 		$this->ocsContext = new OCSContext();
 		$this->authContext = new AuthContext();
+		$this->appConfigurationContext = new AppConfigurationContext();
 		$this->ocsContext->before($scope);
 		$this->authContext->setUpScenario($scope);
+		$this->appConfigurationContext->setUpScenario($scope);
 		$environment->registerContext($this->ocsContext);
+		$environment->registerContext($this->authContext);
 		$environment->registerContext($this->authContext);
 	}
 
@@ -2719,7 +2731,7 @@ class FeatureContext extends BehatVariablesContext {
 	/**
 	 * @return void
 	 */
-	protected function resetAppConfigs() {
+	public function resetAppConfigs() {
 		// Remember the current capabilities
 		$this->theAdministratorGetsCapabilitiesCheckResponse();
 		$this->savedCapabilitiesXml[$this->getBaseUrl()] = $this->getCapabilitiesXml();
